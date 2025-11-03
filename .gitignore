@@ -1,0 +1,17 @@
+# Dependencies
+/node_modules
+/dist
+/build
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# IDE Specific Files (optional, but recommended)
+.vscode/
+
+# Testing
+/coverage
