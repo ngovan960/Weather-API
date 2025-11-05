@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dự Báo Thời Tiết</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #e6f7ff; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        h1 { color: #007bff; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        input[type="text"] { width: 70%; padding: 10px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #1e7e34; }
+        #results { margin-top: 25px; padding: 20px; border: 1px solid #b3e0ff; background-color: #f0f8ff; border-radius: 8px; }
+        .weather-info { margin-bottom: 15px; padding: 10px; border-left: 5px solid #007bff; background-color: #fff; }
+        .weather-info strong { color: #333; display: inline-block; width: 150px; }
+        .error { color: red; font-weight: bold; }
+        .city-header { font-size: 1.5em; font-weight: bold; color: #0056b3; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌤️ Dự Báo Thời Tiết API</h1>
+    
+    <input type="text" id="cityInput" placeholder="Nhập tên thành phố (ví dụ: Hanoi)">
+    <button onclick="fetchWeather()">Lấy Thời Tiết</button>
+    
+    <div id="results">
+        <p>Nhập tên thành phố và nhấn nút để xem dự báo.</p>
+    </div>
+</div>
+
+<script>
+    // Đảm bảo Port và Host này trùng khớp với cấu hình Express của bạn
+    const API_BASE_URL = "http://localhost:3000/weather"; // Hoặc port bạn đã cấu hình
+
+    async function fetchWeather() {
+        const cityInput = document.getElementById('cityInput');
+        const resultsDiv = document.getElementById('results');
+        const cityCode = cityInput.value.trim();
+
+        if (!cityCode) {
+            resultsDiv.innerHTML = `<p class="error">Vui lòng nhập tên thành phố!</p>`;
+            return;
+        }
+
+        resultsDiv.innerHTML = `<p style="color: blue;">Đang gọi API cho ${cityCode}...</p>`;
+
+        try {
+            const apiUrl = `${API_BASE_URL}/${encodeURIComponent(cityCode)}`; 
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMessage = data.error || data.details || 'Lỗi không xác định từ server.';
+                resultsDiv.innerHTML = `<p class="error">Lỗi API (HTTP ${response.status}): ${errorMessage}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                return;
+            }
+            
+            // ----------------------------------------------------
+            // 💡 PHẦN QUAN TRỌNG: TRÍCH XUẤT VÀ HIỂN THỊ DỮ LIỆU
+            // Visual Crossing API trả về dữ liệu ngày hiện tại trong data.currentConditions
+            
+            const city = data.address || cityCode;
+            const current = data.currentConditions;
+
+            // Kiểm tra xem dữ liệu thời tiết có đầy đủ không
+            if (!current) {
+                resultsDiv.innerHTML = `<p class="error">Không tìm thấy dữ liệu thời tiết hiện tại cho ${city}.</p>`;
+                return;
+            }
+
+            // Lấy các giá trị cần thiết
+            const temperature = current.temp || 'N/A';
+            const feelslike = current.feelslike || 'N/A';
+            const humidity = current.humidity || 'N/A';
+            const windspeed = current.windspeed || 'N/A'; // Tốc độ gió (km/h vì ta dùng unitGroup=metric)
+            const conditions = current.conditions || 'N/A'; // Dự báo tóm tắt
+
+            resultsDiv.innerHTML = `
+                <div class="city-header">${city.toUpperCase()}</div>
+                <div class="weather-info">
+                    <strong>Nhiệt độ:</strong> ${temperature} °C
+                </div>
+                <div class="weather-info">
+                    <strong>Cảm giác như:</strong> ${feelslike} °C
+                </div>
+                <div class="weather-info">
+                    <strong>Độ ẩm không khí:</strong> ${humidity} %
+                </div>
+                <div class="weather-info">
+                    <strong>Tốc độ gió:</strong> ${windspeed} km/h
+                </div>
+                <div class="weather-info">
+                    <strong>Dự báo tóm tắt:</strong> ${conditions}
+                </div>
+                <hr>
+                <p style="font-size: 0.8em; color: #666;">(Dữ liệu thô JSON đã được tải thành công)</p>
+            `;
+            // ----------------------------------------------------
+
+        } catch (error) {
+            resultsDiv.innerHTML = `<p class="error">Lỗi kết nối: ${error.message}. Server Express có đang chạy không?</p>`;
+        }
+    }
+</script>
+
+</body>
+</html>
